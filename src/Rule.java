@@ -7,7 +7,7 @@ public class Rule {
 	public double support;
 	public double confident;
 	
-	public Rule(int max) {
+	public Rule() {
 		itemAll = new ArrayList<Integer>();
 		itemGiven = new ArrayList<Integer>();
 		support = 0;

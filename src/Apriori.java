@@ -33,6 +33,21 @@ public class Apriori {
 		min_support = mincon;
 	}
 	
+	public int findFrequency(Frequency f) {
+		int c = 0;
+		for (int i=0;i<row;i++) {
+			boolean is = true;
+			for (int j=0;j<f.item.size();j++) {
+				if (mat[i][f.item.get(j)]==0) {
+					is = false;
+					break;
+				}
+			}
+			if (is) c++;
+		}
+		return c;
+	}
+	
 	private double findSupport(Rule rule) {
 		double c = 0;
 		for (int i=0;i<row;i++) {
@@ -103,6 +118,16 @@ public class Apriori {
 		return subsetCollection;
 	}
 	
+	private ArrayList<Frequency> initFrequency() {
+		ArrayList<Frequency> fs = new ArrayList<Frequency>();
+		for (int i=0;i<col;i++) {
+			Frequency f = new Frequency();
+			f.item.add(i);
+			f.f = findFrequency(f);
+			fs.add(f);
+		}
+		return fs;
+	}
 	
 	private ArrayList<Rule> initRule() {
 		ArrayList<Rule> rules = new ArrayList<Rule>();
@@ -113,7 +138,7 @@ public class Apriori {
 				itemAll.add(j);
 				ArrayList<ArrayList<Integer>> subset = getSubsets(itemAll);
 				for (int k=1;k<subset.size()-1;k++) {
-					Rule rule = new Rule(10);
+					Rule rule = new Rule();
 					rule.itemAll.addAll(itemAll);
 					rule.itemGiven.addAll(subset.get(k));
 					rule.support = findSupport(rule);
@@ -150,6 +175,27 @@ public class Apriori {
 		return false;
 	}
 	
+	private ArrayList<Frequency> joinFrequency(ArrayList<Frequency> fs, int len) {
+		ArrayList<Frequency> result = new ArrayList<Frequency>();
+		for (int i=0;i<fs.size();i++) {
+			for (int j=i+1;j<fs.size();j++) {
+				if (forsome(fs.get(i).item,fs.get(j).item) || len==2) {
+					ArrayList<Integer> items = new ArrayList<Integer>();
+					items.addAll(fs.get(i).item);
+					items.addAll(fs.get(j).item);
+					removeDuplicate(items);
+					if (items.size()==len) {
+						Frequency f = new Frequency();
+						f.item.addAll(items);
+						f.f = findFrequency(f);
+						result.add(f);
+					}
+				}
+			}
+		}
+		return result;
+	}
+	
 	private ArrayList<Rule> joinRules(ArrayList<Rule> rules, int len) {
 		ArrayList<Rule> nrules = new ArrayList<Rule>();
 		for (int i=0;i<rules.size();i++) {
@@ -162,7 +208,7 @@ public class Apriori {
 					if (itemAll.size()==len) {
 						ArrayList<ArrayList<Integer>> subset = getSubsets(itemAll);
 						for (int k=1;k<subset.size()-1;k++) {
-							Rule rule = new Rule(10);
+							Rule rule = new Rule();
 							rule.itemAll.addAll(itemAll);
 							rule.itemGiven.addAll(subset.get(k));
 							rule.support = findSupport(rule);
@@ -218,5 +264,24 @@ public class Apriori {
 			rules = joinRules(rules, i);
 		}
 		return rules;
+	}
+	
+	public ArrayList<Frequency> getAllFrequency(int len) {
+		ArrayList<Frequency> fs = initFrequency();
+		ArrayList<Frequency> result = new ArrayList<Frequency>();
+		result.addAll(fs);
+		for (int i=2;i<=len;i++) {
+			fs = joinFrequency(fs,i);
+			result.addAll(fs);
+		}
+		return result;
+	}
+	
+	public ArrayList<Frequency> getFrequencyAtLength(int len) {
+		ArrayList<Frequency> fs = initFrequency();
+		for (int i=2;i<=len;i++) {
+			fs = joinFrequency(fs,i);
+		}
+		return fs;
 	}
 }
