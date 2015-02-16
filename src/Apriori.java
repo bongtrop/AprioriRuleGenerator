@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 
 
 public class Apriori {
@@ -30,7 +31,7 @@ public class Apriori {
 	}
 	
 	private double findSupport(Rule rule) {
-		int c = 0;
+		double c = 0;
 		for (int i=0;i<row;i++) {
 			boolean is = true;
 			for (int j=0;j<rule.itemAll.size();j++) {
@@ -44,9 +45,9 @@ public class Apriori {
 		return (c/row)*100;
 	}
 	
-	private double fineConfident(Rule rule) {
-		int c_all = 0;
-		int c_given = 0;
+	private double findConfident(Rule rule) {
+		double c_all = 0;
+		double c_given = 0;
 		for (int i=0;i<row;i++) {
 			boolean is = true;
 			for (int j=0;j<rule.itemAll.size();j++) {
@@ -68,7 +69,7 @@ public class Apriori {
 		}
 		
 		if (c_given==0) c_given=c_all;
-		
+		if (c_given==0) c_given=1;
 		return (c_all/c_given)*100;
 	}
 	
@@ -100,19 +101,119 @@ public class Apriori {
 	}
 	
 	
-	
-	public ArrayList<Rule> createRule(int len) {
+	private ArrayList<Rule> initRule() {
 		ArrayList<Rule> rules = new ArrayList<Rule>();
+		for (int i=0;i<col;i++) {
+			for (int j=i+1;j<col;j++) {
+				ArrayList<Integer> itemAll = new ArrayList<Integer>();
+				itemAll.add(i);
+				itemAll.add(j);
+				ArrayList<ArrayList<Integer>> subset = getSubsets(itemAll);
+				for (int k=1;k<subset.size()-1;k++) {
+					Rule rule = new Rule(10);
+					rule.itemAll.addAll(itemAll);
+					rule.itemGiven.addAll(subset.get(k));
+					rule.support = findSupport(rule);
+					rule.confident = findConfident(rule);
+					rules.add(rule);
+				}
+			}
+		}
+		return rules;
+	}
+	
+	private ArrayList<Rule> findStrongRule(ArrayList<Rule> rules) {
+		ArrayList<Rule> nrules = new ArrayList<Rule>();
+		for (int i=0;i<rules.size();i++) {
+			if (rules.get(i).confident>=this.min_confident && rules.get(i).support>=this.min_support) {
+				nrules.add(rules.get(i));
+			}
+		}
 		
+		return nrules;
+	}
+	
+	private void removeDuplicate(ArrayList<Integer> items) {
+		HashSet<Integer> hs = new HashSet<Integer>();
+		hs.addAll(items);
+		items.clear();
+		items.addAll(hs);
+	}
+	
+	private boolean forsome(ArrayList<Integer> a, ArrayList<Integer> b) {
+		for (int i=0;i<b.size();i++) {
+			if (a.contains(b.get(i))) return true;
+		}
+		return false;
+	}
+	
+	private ArrayList<Rule> joinRules(ArrayList<Rule> rules, int len) {
+		ArrayList<Rule> nrules = new ArrayList<Rule>();
+		for (int i=0;i<rules.size();i++) {
+			for (int j=i+1;j<rules.size();j++) {
+				if (forsome(rules.get(i).itemAll,rules.get(j).itemAll)) {
+					ArrayList<Integer> itemAll = new ArrayList<Integer>();
+					itemAll.addAll(rules.get(i).itemAll);
+					itemAll.addAll(rules.get(j).itemAll);
+					removeDuplicate(itemAll);
+					if (itemAll.size()==len) {
+						ArrayList<ArrayList<Integer>> subset = getSubsets(itemAll);
+						for (int k=1;k<subset.size()-1;k++) {
+							Rule rule = new Rule(10);
+							rule.itemAll.addAll(itemAll);
+							rule.itemGiven.addAll(subset.get(k));
+							rule.support = findSupport(rule);
+							rule.confident = findConfident(rule);
+							nrules.add(rule);
+						}
+					}
+				}
+			}
+		}
+		return nrules;
+	}
+	
+	public ArrayList<Rule> getAllStrongRules(int len) {
+		ArrayList<Rule> rules = initRule();
+		ArrayList<Rule> strong_rules = new ArrayList<Rule>();
+		rules = findStrongRule(rules);
+		strong_rules.addAll(rules);
+		for (int i=3;i<=len;i++) {
+			rules = joinRules(rules,i);
+			rules = findStrongRule(rules);
+			strong_rules.addAll(rules);
+		}
 		
-		for (int i=2;i<=len;i++) {
-			
+		return strong_rules;
+	}
+	
+	public ArrayList<Rule> getAllRules(int len) {
+		ArrayList<Rule> rules = initRule();
+		ArrayList<Rule> result = new ArrayList<Rule>();
+		result.addAll(rules);
+		for (int i=3;i<=len;i++) {
+			rules = joinRules(rules, i);
+			result.addAll(rules);
+		}
+		return rules;
+	}
+	
+	public ArrayList<Rule> getStrongRulesAtLength(int len) {
+		ArrayList<Rule> rules = initRule();
+		rules = findStrongRule(rules);
+		for (int i=3;i<=len;i++) {
+			rules = joinRules(rules,i);
+			rules = findStrongRule(rules);
 		}
 		
 		return rules;
 	}
 	
-	
-	
-	
+	public ArrayList<Rule> getRulesAtLength(int len) {
+		ArrayList<Rule> rules = initRule();
+		for (int i=3;i<=len;i++) {
+			rules = joinRules(rules, i);
+		}
+		return rules;
+	}
 }
