@@ -9,11 +9,14 @@ public class Apriori {
 	private double min_support;
 	private double min_confident;
 	
-	public Apriori(int tran, int item, double minsup, double mincon) {
+	public Apriori(int tran, int max_buy, int item, double minsup, double mincon) {
 		this.mat = new int[tran][item];
 		for (int i=0;i<tran;i++) {
+			int buy = 0;
 			for (int j=0;j<item;j++) {
 				mat[i][j] = (int) Math.round(Math.random());
+				buy += mat[i][j];
+				if (buy==max_buy) break;
 			}
 		}
 		row = tran;
